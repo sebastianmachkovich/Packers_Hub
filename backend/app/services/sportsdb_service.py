@@ -1,9 +1,6 @@
 import aiohttp
 import os
-from dotenv import load_dotenv
 import asyncio
-
-load_dotenv()
 
 API_BASE = "https://www.thesportsdb.com/api/v1/json/3" # Free tier API key
 

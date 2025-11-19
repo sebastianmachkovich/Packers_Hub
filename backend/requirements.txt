@@ -2,3 +2,5 @@ fastapi
 uvicorn[standard]
 aiohttp
 python-dotenv
+motor
+pymongo
