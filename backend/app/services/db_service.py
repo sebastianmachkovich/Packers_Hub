@@ -1,5 +1,5 @@
 from motor.motor_asyncio import AsyncIOMotorClient
-from typing import List, Dict, Any
+from typing import Dict, Any
 from app.config import MONGO_URL, DATABASE_NAME
 
 client = None
