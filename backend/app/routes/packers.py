@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from app.services.sportsdb_service import *
 from app.services.db_service import *
 
-router = APIRouter(prefix="/packers", tags=["Packers"])
+router = APIRouter()
 
 # GET /packers/info
 @router.get("/info")
