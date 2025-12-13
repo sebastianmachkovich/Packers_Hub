@@ -127,7 +127,7 @@ def print_team_games(data, team_name="Green Bay Packers"):
             date_time_obj = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
             # Format to Month Day, Year @ Hour:Minute (e.g., Aug 9, 2025 @ 20:25 UTC)
             display_date = date_time_obj.strftime("%b %d, %Y @ %H:%M UTC")
-        except:
+        except (ValueError, TypeError):
             display_date = f"{date_str} {time_str}" # Fallback if parsing fails
 
         home_team = teams.get("home", {}).get("name")
