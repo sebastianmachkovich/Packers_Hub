@@ -4,7 +4,9 @@ from datetime import datetime
 import json
 import os # Included for API_KEY, assuming it comes from an environment variable
 
-API_KEY = os.environ.get("API_KEY", "a3053a4e7e17915f052bd560b41fb3a3") 
+API_KEY = os.environ.get("API_KEY")
+if not API_KEY:
+    raise RuntimeError("API_KEY environment variable is not set. Please set it to your API key.")
 BASE_URL = "https://v1.american-football.api-sports.io"
 
 HEADERS = {
