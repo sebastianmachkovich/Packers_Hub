@@ -13,25 +13,39 @@ HEADERS = {
     "x-apisports-key": API_KEY
 }
 
+# --- Module-level aiohttp ClientSession ---
+_session: aiohttp.ClientSession = None
+
+async def init_session():
+    global _session
+    if _session is None or _session.closed:
+        _session = aiohttp.ClientSession(headers=HEADERS)
+
+async def close_session():
+    global _session
+    if _session is not None and not _session.closed:
+        await _session.close()
+        _session = None
+
 # --- Core Async Fetch Function ---
 async def fetch_json(url: str, params: dict = None, headers: dict = HEADERS):
     """
     Asynchronously fetches a JSON response from a given URL with optional parameters and headers.
     """
+    global _session
+    if _session is None or _session.closed:
+        raise RuntimeError("aiohttp ClientSession is not initialized. Call init_session() before making requests.")
     try:
-        # ClientSession should ideally be created once per application lifecycle, 
-        # but for simplicity in a script, creating it here is common.
-        async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(url, params=params) as response:
+        async with _session.get(url, params=params) as response:
+            
+            # Check for HTTP status code errors
+            if response.status != 200:
+                print(f"Error: {response.status} for URL: {url} with params: {params}")
+                print(f"Response Text: {await response.text()}")
+                return {"error": f"HTTP Error {response.status}"}
                 
-                # Check for HTTP status code errors
-                if response.status != 200:
-                    print(f"Error: {response.status} for URL: {url} with params: {params}")
-                    print(f"Response Text: {await response.text()}")
-                    return {"error": f"HTTP Error {response.status}"}
-                    
-                # aiohttp handles JSON decoding
-                return await response.json()
+            # aiohttp handles JSON decoding
+            return await response.json()
     except aiohttp.ClientError as e:
         print(f"Aiohttp Client Error: {e}")
         return {"error": f"Client Error: {e}"}
