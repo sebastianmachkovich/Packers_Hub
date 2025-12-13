@@ -202,7 +202,7 @@ async def main():
     # Print results sequentially (no need for async here)
     print_nfl_teams(nfl_teams_data)
     print("\n")
-    print_team_games(packers_games_data, team_name="Green Bay Packers 2023 Schedule")
+    print_team_games(packers_games_data, team_name="Green Bay Packers 2025 Schedule")
     print("\n")
     print_live_games(live_games_data)
     print("\n")
