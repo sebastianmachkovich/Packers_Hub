@@ -1,19 +1,25 @@
 # Packers Hub Backend
 
-A FastAPI-based backend service for fetching and managing Green Bay Packers team information, events, and player data using TheSportsDB API and others coming soon!
+A FastAPI-based backend service for managing Green Bay Packers team information with automated weekly roster updates using Celery and Redis.
 
 ## Features
 
-- 🏈 Fetch Green Bay Packers team information
-- 📅 Get recent team events and games
-- 👤 Search for player information
+- 🏈 Fetch Green Bay Packers team information via API Sports
+- 📅 Get team games and schedules
+- 👤 Player information and statistics
+- 🔄 **Automated weekly roster updates** using Celery Beat
 - ⚡ Async API endpoints for better performance
-- 🔄 Built with FastAPI for automatic API documentation
+- 💾 MongoDB integration for roster storage
+- 🔴 Redis-backed task queue for background jobs
+- 📊 Built with FastAPI for automatic API documentation
 
 ## Prerequisites
 
 - Python 3.8+
 - pip (Python package manager)
+- MongoDB (local or cloud instance)
+- Redis (for Celery task queue)
+- API Sports API key ([get one here](https://api-sports.io/))
 
 ## Getting Started
 
@@ -41,10 +47,53 @@ venv\Scripts\activate     # On Windows
 ```bash
 pip install -r requirements.txt
 ```
+:
 
-### 4. Environment Setup
+```bash
+cp .env.example .env
+```
 
-Create a `.env` file in the backend directory (optional, as the project uses a free API):
+Edit the `.env` file with your configuration:
+
+```env
+# MongoInstall and Start Redis
+
+**macOS:**
+```bash
+brew install redis
+redis-server
+```
+
+**Linux:**
+```bash
+sudo apt-get install redis-server
+sudo service redis-server start
+```
+
+### 6. Run the Application
+
+You need to run multiple processes:
+
+**Terminal 1 - FastAPI Server:**
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+
+**Terminal 2 - Celery Worker:**
+```bash
+celery -A app.celery_app worker --loglevel=info
+```
+
+**Terminal 3 - Celery Beat (Scheduler):**
+```bash
+celery -A app.celery_app beat --loglevel=info
+```
+
+The server will start at `http://127.0.0.1:8000`
+
+📖 **For detailed Celery setup instructions, see [CELERY_SETUP.md](CELERY_SETUP.md)**
+# Redis Configuration
+REDIS_URL=redis://localhost:6379/0optional, as the project uses a free API):
 
 ```bash
 # No API key required for TheSportsDB free tier

@@ -2,24 +2,28 @@ import aiohttp
 import asyncio
 from datetime import datetime
 import json
-import os # Included for API_KEY, assuming it comes from an environment variable
+import os
+import requests  # For synchronous requests in Celery tasks
+from typing import Optional, Dict, Any
+from app.config import API_SPORTS_KEY
 
-API_KEY = os.environ.get("API_KEY")
-if not API_KEY:
-    raise RuntimeError("API_KEY environment variable is not set. Please set it to your API key.")
 BASE_URL = "https://v1.american-football.api-sports.io"
 
-HEADERS = {
-    "x-apisports-key": API_KEY
-}
+def _get_headers():
+    """Get headers with API key. Validates key is set when called."""
+    if not API_SPORTS_KEY:
+        raise RuntimeError("API_KEY environment variable is not set. Please set it in your .env file.")
+    return {"x-apisports-key": API_SPORTS_KEY}
+
+HEADERS = None  # Will be initialized on first use
 
 # --- Module-level aiohttp ClientSession ---
-_session: aiohttp.ClientSession = None
+_session: Optional[aiohttp.ClientSession] = None
 
 async def init_session():
     global _session
     if _session is None or _session.closed:
-        _session = aiohttp.ClientSession(headers=HEADERS)
+        _session = aiohttp.ClientSession(headers=_get_headers())
 
 async def close_session():
     global _session
@@ -28,11 +32,13 @@ async def close_session():
         _session = None
 
 # --- Core Async Fetch Function ---
-async def fetch_json(url: str, params: dict = None, headers: dict = HEADERS):
+async def fetch_json(url: str, params: Optional[Dict[str, Any]] = None, headers: Optional[Dict[str, str]] = None):
     """
     Asynchronously fetches a JSON response from a given URL with optional parameters and headers.
     """
     global _session
+    if headers is None:
+        headers = _get_headers()
     if _session is None or _session.closed:
         raise RuntimeError("aiohttp ClientSession is not initialized. Call init_session() before making requests.")
     try:
@@ -97,6 +103,37 @@ async def get_player_info(player_name: str, season: int = 2025):
     }
     # Note: The search endpoint might return a list of players.
     return await fetch_json(url, params=params)
+
+# Async: get team roster
+async def get_team_roster(team_id: int, season: int = 2025):
+    """Fetches the roster for a specific team and season."""
+    url = f"{BASE_URL}/players"
+    params = {
+        "team": team_id,
+        "season": season
+    }
+    return await fetch_json(url, params=params)
+
+# Synchronous: get team roster (for Celery tasks)
+def get_team_roster_sync(team_id: int = 15, season: int = 2025):
+    """
+    Synchronously fetches the roster for a specific team and season.
+    Used in Celery tasks since they don't support async operations by default.
+    Team ID 15 is Green Bay Packers.
+    """
+    url = f"{BASE_URL}/players"
+    params = {
+        "team": team_id,
+        "season": season
+    }
+    try:
+        response = requests.get(url, headers=_get_headers(), params=params)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        print(f"Error fetching roster: {e}")
+        return {"error": str(e)}
+
 
 
 # --- Formatting and Execution Functions (Can remain sync or be async for printing) ---

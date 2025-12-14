@@ -4,3 +4,6 @@ aiohttp
 python-dotenv
 motor
 pymongo
+celery[redis]
+redis
+requests
