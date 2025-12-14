@@ -1,8 +1,18 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.routes.packers import router as packers_router
 from app.services.db_service import *
 
 app = FastAPI(title="PackersHub Backend")
+
+# CORS Configuration
+app.add_middleware(
+  CORSMiddleware,
+  allow_origins=["http://localhost:5173"],  # Vite dev server
+  allow_credentials=True,
+  allow_methods=["*"],
+  allow_headers=["*"],
+)
 
 # Database lifecycle
 @app.on_event("startup")

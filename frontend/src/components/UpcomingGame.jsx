@@ -4,7 +4,7 @@ import "./UpcomingGame.css";
 
 export default function UpcomingGame() {
   const [games, setGames] = useState([]);
-  const [currentWeek, setCurrentWeek] = useState(1);
+  const [currentGameIndex, setCurrentGameIndex] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,17 +20,17 @@ export default function UpcomingGame() {
       );
       setGames(sortedGames);
 
-      // Find current/upcoming week
+      // Find current/upcoming game
       const now = new Date();
-      const upcomingGame = sortedGames.find((g) => {
+      const upcomingGameIndex = sortedGames.findIndex((g) => {
         const gameDate = new Date(g.game.date.date);
         return gameDate >= now || g.game.status.short === "NS";
       });
 
-      if (upcomingGame) {
-        setCurrentWeek(upcomingGame.game.week);
+      if (upcomingGameIndex !== -1) {
+        setCurrentGameIndex(upcomingGameIndex);
       } else if (sortedGames.length > 0) {
-        setCurrentWeek(sortedGames[sortedGames.length - 1].game.week);
+        setCurrentGameIndex(sortedGames.length - 1);
       }
 
       setLoading(false);
@@ -40,19 +40,17 @@ export default function UpcomingGame() {
     }
   };
 
-  const currentGame = games.find((g) => g.game.week === currentWeek);
-  const maxWeek = Math.max(...games.map((g) => g.game.week), 1);
-  const minWeek = Math.min(...games.map((g) => g.game.week), 1);
+  const currentGame = games[currentGameIndex];
 
-  const goToPrevWeek = () => {
-    if (currentWeek > minWeek) {
-      setCurrentWeek(currentWeek - 1);
+  const goToPrevGame = () => {
+    if (currentGameIndex > 0) {
+      setCurrentGameIndex(currentGameIndex - 1);
     }
   };
 
-  const goToNextWeek = () => {
-    if (currentWeek < maxWeek) {
-      setCurrentWeek(currentWeek + 1);
+  const goToNextGame = () => {
+    if (currentGameIndex < games.length - 1) {
+      setCurrentGameIndex(currentGameIndex + 1);
     }
   };
 
@@ -115,8 +113,8 @@ export default function UpcomingGame() {
       <div className="week-navigation">
         <button
           className="nav-arrow"
-          onClick={goToPrevWeek}
-          disabled={currentWeek <= minWeek}
+          onClick={goToPrevGame}
+          disabled={currentGameIndex === 0}
         >
           ‹
         </button>
@@ -128,8 +126,8 @@ export default function UpcomingGame() {
 
         <button
           className="nav-arrow"
-          onClick={goToNextWeek}
-          disabled={currentWeek >= maxWeek}
+          onClick={goToNextGame}
+          disabled={currentGameIndex === games.length - 1}
         >
           ›
         </button>

@@ -122,6 +122,14 @@
   font-size: 14px;
 }
 
+.loading-favorites {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-style: italic;
+  font-size: 15px;
+}
+
 .season-stats {
   display: flex;
   flex-direction: column;

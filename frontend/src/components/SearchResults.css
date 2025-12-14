@@ -1,0 +1,150 @@
+.search-results-panel {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 16px;
+}
+
+.search-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.search-results-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #203731;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dismiss-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #e0e0e0;
+  background: white;
+  color: #666;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.dismiss-btn:hover {
+  border-color: #ff4444;
+  color: #ff4444;
+  background: #fff5f5;
+  transform: rotate(90deg);
+}
+
+.search-results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.search-results-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.search-results-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.search-results-list::-webkit-scrollbar-thumb {
+  background: #ffb612;
+  border-radius: 3px;
+}
+
+.search-result-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: #f8f9fa;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.search-result-card:hover {
+  border-color: #ffb612;
+  transform: translateX(4px);
+}
+
+.search-result-info {
+  flex: 1;
+}
+
+.search-result-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #203731;
+  margin-bottom: 6px;
+}
+
+.search-result-meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.search-result-position {
+  display: inline-block;
+  background: #203731;
+  color: #ffb612;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.search-result-age {
+  font-size: 13px;
+  color: #666;
+}
+
+.star-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid #ffb612;
+  background: white;
+  color: #ffb612;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.star-btn:hover:not(:disabled) {
+  background: #ffb612;
+  color: white;
+  transform: scale(1.1);
+}
+
+.star-btn.favorited {
+  background: #ffb612;
+  color: white;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.star-btn:disabled {
+  cursor: not-allowed;
+}

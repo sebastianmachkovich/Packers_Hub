@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import api from "../api/client";
 import "./Favorites.css";
 
-export default function Favorites({ favorites, onRemoveFavorite }) {
+export default function Favorites({ favorites, onRemoveFavorite, loading }) {
   const [seasonStats, setSeasonStats] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [loadingStats, setLoadingStats] = useState(false);
 
   useEffect(() => {
     if (favorites.length > 0) {
@@ -13,7 +13,7 @@ export default function Favorites({ favorites, onRemoveFavorite }) {
   }, [favorites]);
 
   const fetchSeasonStats = async () => {
-    setLoading(true);
+    setLoadingStats(true);
     const statsPromises = favorites.map(async (fav) => {
       try {
         const stats = await api.getPlayerStats(fav.player.id, fav.player.name);
@@ -33,7 +33,7 @@ export default function Favorites({ favorites, onRemoveFavorite }) {
     });
 
     setSeasonStats(statsMap);
-    setLoading(false);
+    setLoadingStats(false);
   };
 
   const getSeasonStats = (stats, position) => {
@@ -129,6 +129,15 @@ export default function Favorites({ favorites, onRemoveFavorite }) {
 
     return sections;
   };
+
+  if (loading) {
+    return (
+      <div className="favorites">
+        <h2 className="section-title">⭐ Favorites</h2>
+        <div className="loading-favorites">Loading favorites...</div>
+      </div>
+    );
+  }
 
   if (favorites.length === 0) {
     return (

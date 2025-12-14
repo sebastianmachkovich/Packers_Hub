@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import PlayerSearch from "./components/PlayerSearch";
+import SearchResults from "./components/SearchResults";
 import UpcomingGame from "./components/UpcomingGame";
 import LiveStats from "./components/LiveStats";
 import Favorites from "./components/Favorites";
@@ -8,24 +9,22 @@ import "./App.css";
 
 function App() {
   const [favorites, setFavorites] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
   const [isGameLive, setIsGameLive] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Load favorites from localStorage on mount
   useEffect(() => {
-    const savedFavorites = localStorage.getItem("packers_favorites");
-    if (savedFavorites) {
+    const saved = localStorage.getItem("packers-favorites");
+    if (saved) {
       try {
-        setFavorites(JSON.parse(savedFavorites));
+        setFavorites(JSON.parse(saved));
       } catch (error) {
-        console.error("Failed to load favorites:", error);
+        console.error("Failed to parse favorites:", error);
       }
     }
+    setLoading(false);
   }, []);
-
-  // Save favorites to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem("packers_favorites", JSON.stringify(favorites));
-  }, [favorites]);
 
   // Check for live games periodically
   useEffect(() => {
@@ -46,16 +45,35 @@ function App() {
     }
   };
 
+  const handleSearch = (results) => {
+    setSearchResults(results);
+  };
+
   const handleAddFavorite = (playerData) => {
-    const playerId = playerData.player.id;
-    // Prevent duplicates
-    if (!favorites.some((fav) => fav.player.id === playerId)) {
-      setFavorites([...favorites, playerData]);
+    const player = playerData.player || playerData;
+    const playerId = player.id;
+
+    if (
+      favorites.some((fav) => {
+        const favId = fav.player?.id || fav.id;
+        return favId === playerId;
+      })
+    ) {
+      return; // Already favorited
     }
+
+    const newFavorites = [...favorites, { player }];
+    setFavorites(newFavorites);
+    localStorage.setItem("packers-favorites", JSON.stringify(newFavorites));
   };
 
   const handleRemoveFavorite = (playerId) => {
-    setFavorites(favorites.filter((fav) => fav.player.id !== playerId));
+    const newFavorites = favorites.filter((fav) => {
+      const favId = fav.player?.id || fav.id;
+      return favId !== playerId;
+    });
+    setFavorites(newFavorites);
+    localStorage.setItem("packers-favorites", JSON.stringify(newFavorites));
   };
 
   return (
@@ -74,8 +92,11 @@ function App() {
 
       <main className="app-main">
         <div className="search-section">
-          <PlayerSearch
+          <PlayerSearch onSearch={handleSearch} />
+          <SearchResults
+            results={searchResults}
             onAddFavorite={handleAddFavorite}
+            onDismiss={() => setSearchResults([])}
             favorites={favorites}
           />
         </div>
@@ -93,6 +114,7 @@ function App() {
             <Favorites
               favorites={favorites}
               onRemoveFavorite={handleRemoveFavorite}
+              loading={loading}
             />
           </div>
         </div>

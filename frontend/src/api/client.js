@@ -23,11 +23,11 @@ export const api = {
    * @returns {Promise<Object>} Search results with players array
    */
   async searchPlayers(playerName, forceRefresh = false) {
-    const params = new URLSearchParams({
-      player: playerName,
-      force_refresh: forceRefresh,
-    });
-    const response = await fetch(`${BASE_URL}/packers/search?${params}`);
+    const response = await fetch(
+      `${BASE_URL}/packers/player/${encodeURIComponent(
+        playerName
+      )}?fallback_api=${forceRefresh}`
+    );
     if (!response.ok) throw new Error("Failed to search players");
     return response.json();
   },
@@ -104,6 +104,57 @@ export const api = {
       }
     );
     if (!response.ok) throw new Error("Failed to trigger games update");
+    return response.json();
+  },
+
+  /**
+   * Get user's favorite players
+   * @param {string} userId - User ID (default: "default")
+   * @returns {Promise<Object>} Favorites data
+   */
+  async getFavorites(userId = "default") {
+    const response = await fetch(
+      `${BASE_URL}/packers/favorites?user_id=${userId}`
+    );
+    if (!response.ok) throw new Error("Failed to fetch favorites");
+    return response.json();
+  },
+
+  /**
+   * Add a player to favorites
+   * @param {Object} playerData - Player data to favorite
+   * @param {string} userId - User ID (default: "default")
+   * @returns {Promise<Object>} Success response
+   */
+  async addFavorite(playerData, userId = "default") {
+    const response = await fetch(
+      `${BASE_URL}/packers/favorites?user_id=${userId}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(playerData),
+      }
+    );
+    if (!response.ok) throw new Error("Failed to add favorite");
+    return response.json();
+  },
+
+  /**
+   * Remove a player from favorites
+   * @param {number} playerId - Player ID
+   * @param {string} userId - User ID (default: "default")
+   * @returns {Promise<Object>} Success response
+   */
+  async removeFavorite(playerId, userId = "default") {
+    const response = await fetch(
+      `${BASE_URL}/packers/favorites/${playerId}?user_id=${userId}`,
+      {
+        method: "DELETE",
+      }
+    );
+    if (!response.ok) throw new Error("Failed to remove favorite");
     return response.json();
   },
 };
