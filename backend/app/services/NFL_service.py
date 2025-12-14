@@ -197,6 +197,21 @@ def get_game_by_id_sync(game_id: int):
         print(f"Error fetching game: {e}")
         return {"error": str(e)}
 
+# Synchronous: get live game player statistics
+def get_game_player_statistics_sync(game_id: int):
+    """Fetch live player statistics for a specific game (sync, for Celery tasks).
+    This endpoint updates every 30 seconds during live games.
+    """
+    url = f"{BASE_URL}/games/statistics/players"
+    params = {"id": game_id}
+    try:
+        response = requests.get(url, headers=_get_headers(), params=params)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        print(f"Error fetching game player statistics: {e}")
+        return {"error": str(e)}
+
 
 
 # --- Formatting and Execution Functions (Can remain sync or be async for printing) ---

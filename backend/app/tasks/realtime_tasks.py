@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from app.celery_app import celery_app
-from app.services.NFL_service import get_live_games_sync, get_player_statistics_sync
+from app.services.NFL_service import get_live_games_sync, get_game_player_statistics_sync
 from app.services.db_service import get_sync_database, upsert_player_stats_sync, get_next_game_sync
 
 PACKERS_TEAM_ID = 15
@@ -46,43 +46,41 @@ def update_packers_live_stats(season: int = 2025):
 
 	print(f"[INFO] Live Packers game detected! Updating stats and rescheduling in 30 seconds...")
 
-	# Fetch players from DB to know whom to update
-	db = get_sync_database()
-	players = list(db["players"].find({"team_id": PACKERS_TEAM_ID, "season": season}, {"player": 1, "id": 1}))
+	# Get the game ID from the live game
+	game_id = packers_live[0].get("game", {}).get("id")
+	if not game_id:
+		return {"success": False, "error": "Could not extract game ID from live game"}
+
+	# Fetch live player stats for this game (returns stats for ALL players in the game)
+	game_stats_resp = get_game_player_statistics_sync(game_id)
+	if not game_stats_resp or "error" in game_stats_resp:
+		return {"success": False, "error": game_stats_resp.get("error") if isinstance(game_stats_resp, dict) else "Unknown error"}
+
+	# Extract player stats from response
+	player_stats_list = game_stats_resp.get("response", [])
+	if not isinstance(player_stats_list, list):
+		return {"success": False, "error": "Invalid game stats response format"}
+
+	# Filter to only Packers players and upsert their stats
 	updated = 0
 	errors = []
 
-	for p in players:
-		player_id = None
-		if isinstance(p, dict):
-			player_id = p.get("player", {}).get("id") or p.get("id")
+	for player_stat in player_stats_list:
+		if not isinstance(player_stat, dict):
+			continue
+		
+		# Check if this player belongs to Packers (team_id 15)
+		player_team_id = player_stat.get("team", {}).get("id")
+		if player_team_id != PACKERS_TEAM_ID:
+			continue
+		
+		player_id = player_stat.get("player", {}).get("id")
 		if not player_id:
-			errors.append({"player": p, "error": "missing player id"})
+			errors.append({"error": "missing player id", "data": player_stat})
 			continue
 
-		stats_resp = get_player_statistics_sync(player_id, season=season)
-		if not stats_resp or "error" in stats_resp:
-			errors.append({"player_id": player_id, "error": stats_resp.get("error") if isinstance(stats_resp, dict) else "unknown"})
-			continue
-
-		# API returns response as a list of player stats, pass it directly to upsert
-		stats_payload = stats_resp.get("response")
-		
-		# Check if response exists (could be empty list [] which is falsy but valid)
-		if stats_payload is None:
-			errors.append({"player_id": player_id, "error": "null stats response"})
-			continue
-		
-		# Empty list means no stats for this player yet - skip but don't treat as error
-		if isinstance(stats_payload, list) and len(stats_payload) == 0:
-			continue
-		
-		# Ensure payload is dict or list
-		if not isinstance(stats_payload, (dict, list)):
-			errors.append({"player_id": player_id, "error": f"invalid stats payload type: {type(stats_payload)}"})
-			continue
-
-		upsert_result = upsert_player_stats_sync(player_id, season, stats_payload)
+		# Upsert player stats - pass the player_stat dict directly
+		upsert_result = upsert_player_stats_sync(player_id, season, [player_stat])
 		if upsert_result.get("success"):
 			updated += 1
 		else:
