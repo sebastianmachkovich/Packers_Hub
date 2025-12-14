@@ -174,6 +174,7 @@ def get_team_games_sync(team_id: int = 15, season: int = 2025):
     params = {
         "team": team_id,
         "season": season,
+        "timezone": "America/Chicago",  # Get times in Chicago timezone
     }
     try:
         response = requests.get(url, headers=_get_headers(), params=params)

@@ -9,7 +9,8 @@ PACKERS_TEAM_ID = 15
 def update_packers_live_stats(season: int = 2025):
 	"""
 	Poll live games; if Packers are playing, fetch and upsert player stats in near real-time.
-	Checks game status/times first to avoid unnecessary API calls.
+	Checks game status/times first. If game is active, reschedules itself every 30 seconds.
+	Otherwise, waits for next Beat schedule (every 5 minutes).
 	"""
 	print(f"[{datetime.now()}] Checking for active Packers game...")
 	
@@ -40,7 +41,10 @@ def update_packers_live_stats(season: int = 2025):
 	]
 
 	if not packers_live:
+		print(f"[INFO] No live Packers game, will check again in 5 minutes")
 		return {"success": True, "status": "no-live-packers-game", "timestamp": datetime.utcnow().isoformat()}
+
+	print(f"[INFO] Live Packers game detected! Updating stats and rescheduling in 30 seconds...")
 
 	# Fetch players from DB to know whom to update
 	db = get_sync_database()
@@ -84,10 +88,14 @@ def update_packers_live_stats(season: int = 2025):
 		else:
 			errors.append({"player_id": player_id, "error": upsert_result.get("error")})
 
+	# Reschedule this task to run again in 30 seconds since game is still live
+	update_packers_live_stats.apply_async(args=[season], countdown=30)
+
 	return {
 		"success": True,
 		"updated_count": updated,
 		"errors": errors,
+		"rescheduled_in": "30s",
 		"timestamp": datetime.utcnow().isoformat(),
 	}
 
