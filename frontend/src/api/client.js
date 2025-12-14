@@ -35,15 +35,13 @@ export const api = {
   /**
    * Get player statistics
    * @param {number} playerId - Player ID
-   * @param {string} playerName - Player name (optional)
+   * @param {string} playerName - Player name (optional, not used in current endpoint)
    * @returns {Promise<Object>} Player stats object
    */
   async getPlayerStats(playerId, playerName = null) {
-    const params = new URLSearchParams();
-    if (playerId) params.append("player_id", playerId);
-    if (playerName) params.append("player_name", playerName);
-
-    const response = await fetch(`${BASE_URL}/packers/stats?${params}`);
+    const response = await fetch(
+      `${BASE_URL}/packers/player/${playerId}/stats`
+    );
     if (!response.ok) throw new Error("Failed to fetch player stats");
     return response.json();
   },
