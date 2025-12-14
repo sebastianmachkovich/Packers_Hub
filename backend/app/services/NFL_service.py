@@ -134,6 +134,68 @@ def get_team_roster_sync(team_id: int = 15, season: int = 2025):
         print(f"Error fetching roster: {e}")
         return {"error": str(e)}
 
+# Synchronous: get player statistics
+def get_player_statistics_sync(player_id: int, season: int = 2025):
+    """Fetch season statistics for a player (sync, for Celery tasks)."""
+    url = f"{BASE_URL}/players/statistics"
+    params = {
+        "id": player_id,  # API uses 'id' parameter, not 'player'
+        "season": season,
+    }
+    try:
+        response = requests.get(url, headers=_get_headers(), params=params)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        print(f"Error fetching player statistics: {e}")
+        return {"error": str(e)}
+
+# Synchronous: get live games
+def get_live_games_sync(league_id: int = 1, season: int = 2025):
+    """Fetch currently live games (sync helper for Celery tasks)."""
+    url = f"{BASE_URL}/games"
+    params = {
+        "live": "all",
+        "league": league_id,
+        "season": season,
+    }
+    try:
+        response = requests.get(url, headers=_get_headers(), params=params)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        print(f"Error fetching live games: {e}")
+        return {"error": str(e)}
+
+# Synchronous: get team games
+def get_team_games_sync(team_id: int = 15, season: int = 2025):
+    """Fetch games for a team (sync, for Celery tasks). Team ID 15 = Packers."""
+    url = f"{BASE_URL}/games"
+    params = {
+        "team": team_id,
+        "season": season,
+    }
+    try:
+        response = requests.get(url, headers=_get_headers(), params=params)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        print(f"Error fetching team games: {e}")
+        return {"error": str(e)}
+
+# Synchronous: get specific game by ID
+def get_game_by_id_sync(game_id: int):
+    """Fetch a specific game by ID (sync, for Celery tasks)."""
+    url = f"{BASE_URL}/games"
+    params = {"id": game_id}
+    try:
+        response = requests.get(url, headers=_get_headers(), params=params)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        print(f"Error fetching game: {e}")
+        return {"error": str(e)}
+
 
 
 # --- Formatting and Execution Functions (Can remain sync or be async for printing) ---

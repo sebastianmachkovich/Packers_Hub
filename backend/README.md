@@ -1,189 +1,87 @@
 # Packers Hub Backend
 
-A FastAPI-based backend service for managing Green Bay Packers team information with automated weekly roster updates using Celery and Redis.
+FastAPI backend for Green Bay Packers data with Celery/Redis workers keeping roster and player stats fresh.
 
 ## Features
 
-- 🏈 Fetch Green Bay Packers team information via API Sports
-- 📅 Get team games and schedules
-- 👤 Player information and statistics
-- 🔄 **Automated weekly roster updates** using Celery Beat
-- ⚡ Async API endpoints for better performance
-- 💾 MongoDB integration for roster storage
-- 🔴 Redis-backed task queue for background jobs
-- 📊 Built with FastAPI for automatic API documentation
+- Automated weekly roster sync (Celery Beat)
+- Postgame player stats refresh (season 2025)
+- Realtime player stats polling during live games
+- MongoDB persistence for roster and stats
+- API endpoints backed by our database (no live API calls for searches)
 
 ## Prerequisites
 
-- Python 3.8+
-- pip (Python package manager)
-- MongoDB (local or cloud instance)
-- Redis (for Celery task queue)
-- API Sports API key ([get one here](https://api-sports.io/))
+- Python 3.10+
+- MongoDB running locally or remote URI
+- Redis running locally (for Celery broker/result)
+- API Sports NFL key (https://api-sports.io/)
 
-## Getting Started
-
-### 1. Clone the Repository
+## Setup
 
 ```bash
-git clone https://github.com/sebastianmachkovich/Packers_Hub.git
-cd Packers_Hub/backend
-```
-
-### 2. Create a Virtual Environment (Recommended)
-
-```bash
-# Create virtual environment
-python3 -m venv venv
-
-# Activate virtual environment
-source venv/bin/activate  # On macOS/Linux
-# or
-venv\Scripts\activate     # On Windows
-```
-
-### 3. Install Dependencies
-
-```bash
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
+
+# Configure environment
+cat > .env <<'EOF'
+MONGO_URL=mongodb://localhost:27017
+DATABASE_NAME=packers_hub
+API_KEY=your_api_sports_key
+REDIS_URL=redis://localhost:6379/0
+EOF
 ```
-:
+
+Start dependencies (examples):
 
 ```bash
-cp .env.example .env
-```
-
-Edit the `.env` file with your configuration:
-
-```env
-# MongoInstall and Start Redis
-
-**macOS:**
-```bash
-brew install redis
+# Redis
 redis-server
+
+# We are using MongoDB Atlas
 ```
 
-**Linux:**
+## Run
+
+Use three terminals:
+
 ```bash
-sudo apt-get install redis-server
-sudo service redis-server start
-```
-
-### 6. Run the Application
-
-You need to run multiple processes:
-
-**Terminal 1 - FastAPI Server:**
-```bash
+# 1) FastAPI
 uvicorn app.main:app --reload --port 8000
-```
 
-**Terminal 2 - Celery Worker:**
-```bash
+# 2) Celery worker
 celery -A app.celery_app worker --loglevel=info
-```
 
-**Terminal 3 - Celery Beat (Scheduler):**
-```bash
+# 3) Celery beat (schedules)
 celery -A app.celery_app beat --loglevel=info
 ```
 
-The server will start at `http://127.0.0.1:8000`
+## Celery schedules
 
-📖 **For detailed Celery setup instructions, see [CELERY_SETUP.md](CELERY_SETUP.md)**
-# Redis Configuration
-REDIS_URL=redis://localhost:6379/0optional, as the project uses a free API):
+- `update_packers_roster` — Mondays 02:00 (weekly roster sync)
+- `update_packers_stats_postgame` — Sundays 23:30 (season stats refresh after games)
+- `update_packers_live_stats` — every 60s (poll live game and upsert stats if Packers are playing)
 
-```bash
-# No API key required for TheSportsDB free tier
-```
+## API Endpoints (DB-backed)
 
-### 5. Run the Application
+- `GET /packers/player/{player_name}?season=2025` — search players in DB; optional `fallback_api=true` to call API if missing.
+- `GET /packers/player/{player_id}/stats?season=2025` — get stored stats for a player.
+- `GET /packers/roster?season=2025` — roster from DB.
+- `POST /packers/roster/update?season=2025` — trigger roster refresh task.
+- `GET /packers/roster/task/{task_id}` — check Celery task status.
 
-```bash
-uvicorn app.main:app --reload
-```
+Swagger UI: http://127.0.0.1:8000/docs
 
-The server will start at `http://127.0.0.1:8000`
+## Notes
 
-## API Endpoints
+- Player stats are stored in `player_stats` collection; roster lives in `players` collection.
+- Realtime job is lightweight when no Packers game is live; it exits early.
 
-### Base URL
-
-`http://127.0.0.1:8000`
-
-### Available Endpoints
-
-| Method | Endpoint                        | Description                            |
-| ------ | ------------------------------- | -------------------------------------- |
-| GET    | `/`                             | Health check - returns backend status  |
-| GET    | `/packers/info`                 | Get Green Bay Packers team information |
-| GET    | `/packers/events`               | Get recent Packers events/games        |
-| GET    | `/packers/player/{player_name}` | Search for player by name              |
-
-### Example Requests
+## Quick checks
 
 ```bash
-# Get team info
-curl http://127.0.0.1:8000/packers/info
-
-# Get recent events
-curl http://127.0.0.1:8000/packers/events
-
-# Search for a player
-curl http://127.0.0.1:8000/packers/player/Aaron%20Rodgers
+curl "http://127.0.0.1:8000/packers/roster?season=2025"
+curl "http://127.0.0.1:8000/packers/player/Jordan%20Love?season=2025"
+curl "http://127.0.0.1:8000/packers/player/12345/stats?season=2025"
 ```
-
-## Project Structure
-
-```
-backend/
-├── app/
-│   ├── __init__.py
-│   ├── main.py              # FastAPI application entry point
-│   ├── config.py            # Configuration settings
-│   ├── celery_app.py        # Celery configuration (planned)
-│   ├── routes/
-│   │   └── packers.py       # Packers API routes
-│   ├── services/
-│   │   └── sportsdb_service.py  # TheSportsDB API integration
-│   └── tasks/
-│       ├── periodic_tasks.py    # Scheduled tasks (planned)
-│       └── realtime_tasks.py    # Real-time tasks (planned)
-├── requirements.txt         # Python dependencies
-├── Dockerfile              # Docker configuration (planned)
-├── docker-compose.yml      # Docker compose setup (planned)
-└── README.md
-```
-
-## Development
-
-### Running in Development Mode
-
-The `--reload` flag enables auto-reload on code changes:
-
-```bash
-uvicorn app.main:app --reload
-```
-
-### Adding New Routes
-
-1. Create or modify route files in `app/routes/`
-2. Import and include the router in `app/main.py`
-3. The API documentation will update automatically
-
-## Tech Stack
-
-- **FastAPI** - Modern web framework for building APIs
-- **uvicorn** - ASGI server
-- **aiohttp** - Async HTTP client for external API calls
-- **python-dotenv** - Environment variable management
-
-## Planned Features
-
-- [ ] Celery integration for background tasks
-- [ ] Redis for caching and task queue
-- [ ] Docker containerization
-- [ ] Real-time game updates
-- [ ] Database integration for data persistence

@@ -7,7 +7,7 @@ celery_app = Celery(
     "packers_hub",
     broker=CELERY_BROKER_URL,
     backend=CELERY_RESULT_BACKEND,
-    include=["app.tasks.periodic_tasks"]
+    include=["app.tasks.periodic_tasks", "app.tasks.realtime_tasks"]
 )
 
 # Celery Configuration
@@ -25,6 +25,15 @@ celery_app.conf.beat_schedule = {
     "update-packers-roster-weekly": {
         "task": "app.tasks.periodic_tasks.update_packers_roster",
         "schedule": crontab(day_of_week=1, hour=2, minute=0),  # Every Monday at 2 AM
+    },
+    "update-packers-stats-postgame": {
+        "task": "app.tasks.periodic_tasks.update_packers_stats_postgame",
+        # Run frequently through typical game end windows (Sunday/Monday early hours)
+        "schedule": crontab(day_of_week="0,1", hour="0-6,20-23", minute="*/15"),
+    },
+    "update-packers-live-stats": {
+        "task": "app.tasks.realtime_tasks.update_packers_live_stats",
+        "schedule": 30.0,  # every 30 seconds during game windows (time-based scheduling)
     },
 }
 
