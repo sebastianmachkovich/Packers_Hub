@@ -75,12 +75,15 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
-  flex: 1;
 }
 
 .stats-left,
 .stats-right {
   min-height: 400px;
+}
+
+.season-section {
+  width: 100%;
 }
 
 .app-footer {

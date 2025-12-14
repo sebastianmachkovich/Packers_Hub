@@ -1,0 +1,152 @@
+.season-stats {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.season-stats .section-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #203731;
+  margin: 0 0 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.season-label {
+  font-size: 14px;
+  font-weight: 600;
+  background: #ffb612;
+  color: #203731;
+  padding: 4px 12px;
+  border-radius: 12px;
+  margin-left: auto;
+}
+
+.season-stats .empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.season-stats .empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.season-stats .empty-state p {
+  font-size: 15px;
+  margin: 0;
+  color: #999;
+}
+
+.loading-stats {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-size: 14px;
+}
+
+.season-stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.season-stat-card {
+  background: #f8f9fa;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 18px;
+  transition: border-color 0.2s ease;
+}
+
+.season-stat-card:hover {
+  border-color: #ffb612;
+}
+
+.season-player-header {
+  margin-bottom: 16px;
+}
+
+.season-player-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #203731;
+  margin-bottom: 6px;
+}
+
+.season-player-meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.season-player-position {
+  display: inline-block;
+  background: #203731;
+  color: #ffb612;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.season-player-age {
+  font-size: 13px;
+  color: #666;
+}
+
+.season-stats-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.stat-section {
+  background: white;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.stat-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #203731;
+  margin-bottom: 10px;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.stat-item-label {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+}
+
+.stat-item-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #203731;
+}
+
+.no-season-stats {
+  text-align: center;
+  padding: 20px;
+  color: #999;
+  font-size: 14px;
+  font-style: italic;
+}

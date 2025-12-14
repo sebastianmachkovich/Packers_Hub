@@ -3,6 +3,7 @@ import PlayerSearch from "./components/PlayerSearch";
 import SearchResults from "./components/SearchResults";
 import UpcomingGame from "./components/UpcomingGame";
 import LiveStats from "./components/LiveStats";
+import SeasonStats from "./components/SeasonStats";
 import Favorites from "./components/Favorites";
 import api from "./api/client";
 import "./App.css";
@@ -117,6 +118,10 @@ function App() {
               loading={loading}
             />
           </div>
+        </div>
+
+        <div className="season-section">
+          <SeasonStats favorites={favorites} />
         </div>
       </main>
 
