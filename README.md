@@ -117,47 +117,70 @@ Open `http://localhost:5173` in your browser
 ### 🔍 Player Search
 
 - Type player name in search bar
-- Results appear in real-time (debounced)
+- Results appear in real-time below search input
 - Click "Favorite" to add to your tracking list
+- Click x to dismiss search results
+- Search results persist until manually dismissed
 
 ### ⭐ Favorites Panel (Right Side)
 
-- View complete season stats for favorited players
-- Stats organized by category:
-  - Passing (QB)
-  - Rushing (RB, FB)
-  - Receiving (WR, TE)
-  - Defense (LB, DE, DT, CB, S)
-  - Kicking (K)
-  - Scoring (all positions)
-- Click ✕ to remove from favorites
+- Lightweight list of favorited players
+- Shows player name, position, and age
+- Click x to remove from favorites
+- Favorites stored in browser localStorage (no backend required)
 - Persists across page refreshes
+- Auto-stretches to show all favorited players
 
 ### ⚡ Live Stats Panel (Left Side)
 
-- Automatically updates when game is LIVE
-- Shows real-time performance for favorited players
-- Position-specific stats displayed
-- 30-second polling during active games
+- **Only appears when game is LIVE** (🔴 LIVE indicator)
+- Automatically updates every 30 seconds during active games
+- Shows position-specific live stats for favorited players only:
+  - **QB**: Pass Yds, Pass TDs, INTs, Comp/Att
+  - **RB/FB**: Rush Yds, Rush TDs, Rec Yds, Rec TDs
+  - **WR/TE**: Receptions, Rec Yds, Rec TDs, Targets
+  - **Defense**: Tackles, Sacks, Forced Fumbles
+  - **K/P**: FG Made/Att, XP Made/Att, Points
+- Fetches data from separate `live_stats` collection
+- Auto-stretches to show all players
+- Stats grouped by position group (Passing, Rushing, Receiving, Defensive, etc.)
+
+### 📊 Season Stats Section (Full Width Below)
+
+- Comprehensive season statistics for all favorited players
+- Displays complete stat categories:
+  - Passing (QB)
+  - Rushing (RB, FB)
+  - Receiving (WR, TE)
+  - Defense (all defensive positions)
+  - Kicking (K)
+  - Punting (P)
+  - Scoring (all positions)
+- Fetches data from `player_stats` collection
+- Updated post-game, not real-time
 
 ### 🏈 Upcoming Game Section
 
 - Navigate weeks with ◄ ► arrows
-- Live game indicator (🔴 LIVE)
-- Real-time scores when game is active
-- Date, time, and opponent information
+- Shows next scheduled Packers game
+- Live game indicator (🔴 LIVE) when game is active
+- Real-time scores during game
+- Date, time, opponent, and venue information
+- Checks game status every 30 seconds
 
 ## API Endpoints
 
 ### Player Endpoints
 
 - `GET /packers/roster?season=2025` - Get full roster
-- `GET /packers/search?player=name` - Search players
-- `GET /packers/stats?player_id=X` - Get player statistics
+- `GET /packers/player/{name}` - Search players by name
+- `GET /packers/player/{id}/stats?season=2025` - Get player season statistics
+- `POST /packers/live-stats` - Get live stats for multiple players (body: `{player_ids: [1049, 6], season: 2025}`)
 
 ### Game Endpoints
 
 - `GET /packers/games?season=2025` - Get game schedule
+- `GET /packers/next-game?season=2025` - Get next scheduled game
 
 ### Admin Endpoints (Manual Triggers)
 
@@ -169,14 +192,47 @@ Open `http://localhost:5173` in your browser
 
 ### Periodic Tasks (Celery Beat)
 
-1. **Weekly Roster Update**: Every Monday at 2:00 AM CST
-2. **Post-Game Stats Refresh**: Every 15 minutes on Sunday/Monday (game days)
+1. **Live Stats Update**: Runs **every 30 seconds**
+   - Checks for active Packers games
+   - When game is live -> fetches all player stats from API
+   - Stores stats in separate `live_stats` MongoDB collection
+   - Groups stats by position (Passing, Rushing, Receiving, Defensive, etc.)
+   - Auto-reschedules every 30 seconds while game is active
+2. **Weekly Roster Update**: Every Monday at 2:00 AM CST
+   - Refreshes team roster from API-Sports
+3. **Post-Game Stats Refresh**: Every 15 minutes on Sunday/Monday
+   - Updates season statistics in `player_stats` collection
 
-### Real-Time Task
+Create `backend/.env`:
 
-- **Live Stats Polling**: Checks for live games every 5 minutes
-  - When game is live → polls every 30 seconds
-  - When no live game → waits 5 minutes
+```bash
+MONGO_URL=mongodb+srv://username:password@cluster.mongodb.net/  # Or localhost
+DATABASE_NAME=PackersHub
+API_KEY=your_api_sports_key_here
+REDIS_URL=redis://localhost:6379/0
+```
+
+**Note**: The project uses MongoDB Atlas in production. For local development, you can use:
+
+```bash
+MONGO_URL=mongodb://localhost:27017/
+DATABASE_NAME=packers_hub
+```
+
+### Frontend Configuration
+
+Located in `frontend/src/api/client.js`:
+
+```javascript
+const BASE_URL = "http://localhost:8000";
+```
+
+### MongoDB Collections
+
+- `players` - Team roster
+- `player_stats` - Season statistics
+- `games` - Game schedule
+- `live_stats` - Real-time game statistics (updated every 30s during games) - Used by Season Stats section
 
 ## Configuration
 
@@ -220,39 +276,34 @@ npm run dev
 - **Celery Beat**: Terminal output where celery beat is running
 - **Frontend**: Browser console + Vite terminal
 
-## Production Build
-
-### Frontend
-
-```bash
-cd frontend
-npm run build
-npm run preview  # Test production build
-```
-
-### Backend
-
-Use production ASGI server:
-
-```bash
-gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker
-```
-
 ## Troubleshooting
 
 ### Backend won't start
 
-- Ensure MongoDB is running: `mongosh`
-- Ensure Redis is running: `redis-cli ping`
-- Check .env file exists with correct values
+- Ensure MongoDB is running: `mo (status must be "1", "2", "3", "4", or "HT")
+- Verify Celery worker and beat are running in separate terminals
+- Check Celery logs for errors (should show "Live Packers game detected!")
+- Ensure `live_stats` collection has recent data in MongoDB
+- Check browser console for API errors
+- Verify favorited players are actually playing in the game
 
-### No data showing
+### Frontend API errors
 
-- Trigger manual updates:
-  ```bash
-  curl -X POST http://localhost:8000/packers/update-roster
+- Ensure backend is running on port 8000
+- Check CORS settings in `backend/app/main.py` (should allow `http://localhost:5173`)
+- Check browser Network tab for failed requests
+- Verify MongoDB connection is working
+
+### Stats showing zeros or wrong values
+
+- **Live Stats**: Make sure you're looking at stats during an active game
+- **Passing yards showing rushing yards**: Each stat group (Passing, Rushing, etc.) is now parsed separately
+- **Player appearing in wrong stats group**: Players can appear in multiple groups (e.g., Jordan Love has both Passing and Rushing stats)
+- Clear browser cache and refresh if seeing stale datackers/update-roster
   curl -X POST http://localhost:8000/packers/update-stats
   curl -X POST http://localhost:8000/packers/update-games
+  ```
+
   ```
 
 ### Live stats not updating
@@ -278,10 +329,6 @@ gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker
 | Database           | MongoDB        |
 | External API       | API-Sports.io  |
 | Styling            | CSS Modules    |
-
-## License
-
-MIT
 
 ## Contributing
 
