@@ -120,7 +120,7 @@ export default function UpcomingGame() {
         </button>
 
         <div className="game-header">
-          <div className="week-label">Week {game.week}</div>
+          <div className="week-label">{game.week}</div>
           {isLive(game.status) && <span className="live-badge">🔴 LIVE</span>}
         </div>
 
