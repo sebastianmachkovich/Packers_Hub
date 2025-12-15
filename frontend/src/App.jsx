@@ -13,6 +13,7 @@ function App() {
   const [searchResults, setSearchResults] = useState([]);
   const [isGameLive, setIsGameLive] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [games, setGames] = useState([]);
 
   // Load favorites from localStorage on mount
   useEffect(() => {
@@ -27,22 +28,28 @@ function App() {
     setLoading(false);
   }, []);
 
-  // Check for live games periodically
+  // Load games and check for live games periodically
   useEffect(() => {
-    checkForLiveGame();
-    const interval = setInterval(checkForLiveGame, 30000); // Check every 30 seconds
+    loadGames();
+    const interval = setInterval(loadGames, 30000); // Check every 30 seconds
     return () => clearInterval(interval);
   }, []);
 
-  const checkForLiveGame = async () => {
+  const loadGames = async () => {
     try {
       const data = await api.getGames(2025);
-      const liveGame = data.games?.find((game) =>
+      const sortedGames = (data.games || []).sort(
+        (a, b) => a.game.week - b.game.week
+      );
+      setGames(sortedGames);
+
+      // Check if any game is live
+      const liveGame = sortedGames.find((game) =>
         ["Q1", "Q2", "Q3", "Q4", "HT", "OT"].includes(game.game.status.short)
       );
       setIsGameLive(!!liveGame);
     } catch (error) {
-      console.error("Failed to check for live game:", error);
+      console.error("Failed to load games:", error);
     }
   };
 
@@ -103,7 +110,7 @@ function App() {
         </div>
 
         <div className="game-section">
-          <UpcomingGame />
+          <UpcomingGame games={games} onRefresh={loadGames} />
         </div>
 
         <div className="stats-section">

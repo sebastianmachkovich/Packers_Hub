@@ -2,45 +2,28 @@ import { useState, useEffect } from "react";
 import api from "../api/client";
 import "./UpcomingGame.css";
 
-export default function UpcomingGame() {
-  const [games, setGames] = useState([]);
+export default function UpcomingGame({ games = [], onRefresh }) {
   const [currentGameIndex, setCurrentGameIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
 
+  // Find current/upcoming game when games prop changes
   useEffect(() => {
-    loadGames();
-  }, []);
+    if (games.length === 0) return;
 
-  const loadGames = async () => {
-    try {
-      setLoading(true);
-      const data = await api.getGames(2025);
-      const sortedGames = (data.games || []).sort(
-        (a, b) => a.game.week - b.game.week
-      );
-      setGames(sortedGames);
+    const now = new Date();
+    const upcomingGameIndex = games.findIndex((g) => {
+      const gameDate = new Date(g.game.date.date);
+      return gameDate >= now || g.game.status.short === "NS";
+    });
 
-      // Find current/upcoming game
-      const now = new Date();
-      const upcomingGameIndex = sortedGames.findIndex((g) => {
-        const gameDate = new Date(g.game.date.date);
-        return gameDate >= now || g.game.status.short === "NS";
-      });
-
-      if (upcomingGameIndex !== -1) {
-        setCurrentGameIndex(upcomingGameIndex);
-      } else if (sortedGames.length > 0) {
-        setCurrentGameIndex(sortedGames.length - 1);
-      }
-
-      setLoading(false);
-    } catch (error) {
-      console.error("Failed to load games:", error);
-      setLoading(false);
+    if (upcomingGameIndex !== -1) {
+      setCurrentGameIndex(upcomingGameIndex);
+    } else if (games.length > 0) {
+      setCurrentGameIndex(games.length - 1);
     }
-  };
+  }, [games]);
 
   const currentGame = games[currentGameIndex];
+  const loading = games.length === 0;
 
   const goToPrevGame = () => {
     if (currentGameIndex > 0) {

@@ -222,7 +222,7 @@ export default function LiveStats({ favorites, isGameLive }) {
                 </div>
               ) : (
                 <div className="no-stats">
-                  {stats ? "No stats available yet" : "Loading stats..."}
+                  {stats ? "No stats available yet" : "No Live Game Currently..."}
                 </div>
               )}
             </div>
