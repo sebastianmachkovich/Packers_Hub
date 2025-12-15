@@ -8,9 +8,13 @@ export default function LiveStats({ favorites, isGameLive }) {
   const pollingInterval = useRef(null);
 
   useEffect(() => {
+    // Fetch stats immediately when favorites change
+    if (favorites.length > 0) {
+      fetchLiveStats();
+    }
+
     // Start polling when game is live and there are favorites
     if (isGameLive && favorites.length > 0) {
-      fetchLiveStats();
       pollingInterval.current = setInterval(fetchLiveStats, 30000); // Poll every 30 seconds
     } else {
       // Clear polling when game is not live
@@ -30,100 +34,141 @@ export default function LiveStats({ favorites, isGameLive }) {
     if (favorites.length === 0) return;
 
     setLoading(true);
-    const statsPromises = favorites.map(async (fav) => {
-      try {
-        const stats = await api.getPlayerStats(fav.player.id, fav.player.name);
-        return { playerId: fav.player.id, stats };
-      } catch (error) {
-        console.error(`Failed to fetch stats for ${fav.player.name}:`, error);
-        return { playerId: fav.player.id, stats: null };
-      }
-    });
+    try {
+      const playerIds = favorites.map((fav) => fav.player.id);
+      const data = await api.getLiveStats(playerIds);
 
-    const results = await Promise.all(statsPromises);
-    const statsMap = {};
-    results.forEach(({ playerId, stats }) => {
-      if (stats && stats.stats) {
-        statsMap[playerId] = stats;
-      }
-    });
+      // Convert array of stats to map by player_id
+      const statsMap = {};
+      (data.stats || []).forEach((stat) => {
+        if (stat.player_id) {
+          statsMap[stat.player_id] = stat;
+        }
+      });
 
-    setLiveStats(statsMap);
-    setLoading(false);
+      setLiveStats(statsMap);
+    } catch (error) {
+      console.error("Failed to fetch live stats:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const getPositionStats = (stats, position) => {
-    if (!stats || !stats.stats) return null;
+  const getPositionStats = (liveStatDoc, position) => {
+    if (!liveStatDoc || !liveStatDoc.groups) return null;
 
-    const s = stats.stats;
+    // Live stats now have groups array: [{name: "Passing", statistics: [...]}, ...]
+    const groups = liveStatDoc.groups;
+    if (!Array.isArray(groups)) return null;
 
-    // QB Stats
-    if (position === "QB" && s.passing) {
+    // Helper to find a stat value from a specific group
+    const getStatFromGroup = (groupName, statName) => {
+      const group = groups.find((g) => g.name === groupName);
+      if (!group || !group.statistics) return null;
+
+      const stat = group.statistics.find((s) => s.name === statName);
+      return stat ? stat.value : null;
+    };
+
+    // QB Stats - get from Passing group
+    if (position === "QB") {
+      const compAtt = getStatFromGroup("Passing", "comp att");
+
       return [
-        { label: "Pass Yds", value: s.passing.yards || 0 },
-        { label: "Pass TDs", value: s.passing.touchdowns || 0 },
-        { label: "INTs", value: s.passing.interceptions || 0 },
+        {
+          label: "Pass Yds",
+          value: getStatFromGroup("Passing", "yards") || 0,
+        },
+        {
+          label: "Pass TDs",
+          value: getStatFromGroup("Passing", "passing touch downs") || 0,
+        },
+        {
+          label: "INTs",
+          value: getStatFromGroup("Passing", "interceptions") || 0,
+        },
         {
           label: "Comp/Att",
-          value: `${s.passing.completions || 0}/${s.passing.attempts || 0}`,
+          value: compAtt || "0/0",
         },
       ];
     }
 
-    // RB Stats
+    // RB Stats - get from Rushing and Receiving groups
     if (["RB", "FB"].includes(position)) {
-      const rushing = s.rushing || {};
-      const receiving = s.receiving || {};
-      return [
-        { label: "Rush Yds", value: rushing.yards || 0 },
-        { label: "Rush TDs", value: rushing.touchdowns || 0 },
-        { label: "Rec Yds", value: receiving.yards || 0 },
-        { label: "Rec TDs", value: receiving.touchdowns || 0 },
-      ];
-    }
-
-    // WR/TE Stats
-    if (["WR", "TE"].includes(position) && s.receiving) {
-      return [
-        { label: "Receptions", value: s.receiving.receptions || 0 },
-        { label: "Rec Yds", value: s.receiving.yards || 0 },
-        { label: "Rec TDs", value: s.receiving.touchdowns || 0 },
-        { label: "Targets", value: s.receiving.targets || 0 },
-      ];
-    }
-
-    // Defensive Stats
-    if (
-      ["LB", "DE", "DT", "CB", "S", "SS", "FS"].includes(position) &&
-      s.defense
-    ) {
-      return [
-        { label: "Tackles", value: s.defense.tackles || 0 },
-        { label: "Sacks", value: s.defense.sacks || 0 },
-        { label: "INTs", value: s.defense.interceptions || 0 },
-        { label: "FF", value: s.defense.forced_fumbles || 0 },
-      ];
-    }
-
-    // Kicker Stats
-    if (position === "K" && s.kicking) {
       return [
         {
-          label: "FG",
-          value: `${s.kicking.field_goals_made || 0}/${
-            s.kicking.field_goals_attempts || 0
-          }`,
+          label: "Rush Yds",
+          value: getStatFromGroup("Rushing", "yards") || 0,
         },
         {
-          label: "XP",
-          value: `${s.kicking.extra_points_made || 0}/${
-            s.kicking.extra_points_attempts || 0
-          }`,
+          label: "Rush TDs",
+          value: getStatFromGroup("Rushing", "rushing touch downs") || 0,
+        },
+        {
+          label: "Rec Yds",
+          value: getStatFromGroup("Receiving", "yards") || 0,
+        },
+        {
+          label: "Rec TDs",
+          value: getStatFromGroup("Receiving", "receiving touch downs") || 0,
         },
       ];
     }
 
-    return null;
+    // WR/TE Stats - get from Receiving group
+    if (["WR", "TE"].includes(position)) {
+      return [
+        {
+          label: "Receptions",
+          value: getStatFromGroup("Receiving", "total receptions") || 0,
+        },
+        {
+          label: "Rec Yds",
+          value: getStatFromGroup("Receiving", "yards") || 0,
+        },
+        {
+          label: "Rec TDs",
+          value: getStatFromGroup("Receiving", "receiving touch downs") || 0,
+        },
+        {
+          label: "Targets",
+          value: getStatFromGroup("Receiving", "targets") || 0,
+        },
+      ];
+    }
+
+    // K/P Stats - get from Kicking/Punting groups
+    if (["K", "P"].includes(position)) {
+      const fgMade = getStatFromGroup("Kicking", "field goals");
+
+      return [
+        {
+          label: "FG Made/Att",
+          value: fgMade || "0/0",
+        },
+        {
+          label: "XP Made/Att",
+          value: getStatFromGroup("Kicking", "extra point") || "0/0",
+        },
+        {
+          label: "Points",
+          value: getStatFromGroup("Kicking", "points") || 0,
+        },
+      ];
+    }
+
+    // Defensive Stats - get from Defensive group
+    const tackles = getStatFromGroup("Defensive", "tackles");
+    const sacks = getStatFromGroup("Defensive", "sacks");
+    const forcedFumbles = getStatFromGroup("Defensive", "ff");
+
+    const defaultStats = [];
+    if (tackles) defaultStats.push({ label: "Tackles", value: tackles });
+    if (sacks) defaultStats.push({ label: "Sacks", value: sacks });
+    if (forcedFumbles) defaultStats.push({ label: "FF", value: forcedFumbles });
+
+    return defaultStats.length > 0 ? defaultStats : null;
   };
 
   if (favorites.length === 0) {
@@ -145,13 +190,6 @@ export default function LiveStats({ favorites, isGameLive }) {
         {isGameLive && <span className="live-indicator">🔴 LIVE</span>}
         {loading && <span className="updating">↻</span>}
       </h2>
-
-      {!isGameLive && (
-        <div className="not-live-message">
-          Game not currently in progress. Stats will update automatically when
-          game starts.
-        </div>
-      )}
 
       <div className="live-stats-list">
         {favorites.map((fav) => {

@@ -30,7 +30,7 @@ function App() {
   // Check for live games periodically
   useEffect(() => {
     checkForLiveGame();
-    const interval = setInterval(checkForLiveGame, 60000); // Check every minute
+    const interval = setInterval(checkForLiveGame, 30000); // Check every 30 seconds
     return () => clearInterval(interval);
   }, []);
 

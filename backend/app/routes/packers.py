@@ -1,9 +1,11 @@
 from fastapi import APIRouter
+from pydantic import BaseModel
 from app.services.db_service import (
   get_roster_from_db,
   search_players_by_name,
   get_player_stats_from_db,
   get_games_from_db,
+  get_live_stats_from_db,
 )
 from app.services.NFL_service import get_player_info  # optional fallback, not used by default
 from app.tasks.periodic_tasks import (
@@ -13,6 +15,11 @@ from app.tasks.periodic_tasks import (
 )
 
 router = APIRouter()
+
+# Request model for live stats
+class LiveStatsRequest(BaseModel):
+  player_ids: list[int]
+  season: int = 2025
 
 # GET /packers/player/{player_name}
 @router.get("/player/{player_name}")
@@ -59,6 +66,19 @@ async def player_stats(player_id: int, season: int | None = None):
   if isinstance(stats, dict) and stats.get("error"):
     return stats
   return stats
+
+# POST /packers/live-stats - Get live stats for specific player IDs
+@router.post("/live-stats")
+async def get_live_stats(request: LiveStatsRequest):
+  """Get live stats for multiple players by their IDs."""
+  stats = await get_live_stats_from_db(request.player_ids, season=request.season)
+  if isinstance(stats, dict) and stats.get("error"):
+    return stats
+  return {
+    "player_count": len(stats),
+    "stats": stats,
+    "season": request.season
+  }
 
 # GET /packers/roster - Get current roster from database
 @router.get("/roster")

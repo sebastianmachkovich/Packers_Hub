@@ -290,6 +290,67 @@ async def get_player_stats_from_db(player_id: int, season: Optional[int] = None)
         doc["_id"] = str(doc["_id"])
     return doc
 
+def upsert_live_stats_sync(game_id: int, player_id: int, player_stat: Dict[str, Any], season: int = 2025):
+    """Store live game stats in the live_stats collection.
+    This is separate from season stats and gets updated during live games.
+    player_stat should have: {team: {...}, player: {...}, groups: [{name: "Passing", statistics: [...]}, ...]}
+    """
+    try:
+        db = get_sync_database()
+        collection = db["live_stats"]
+        
+        # Store the raw live stat data with metadata
+        # groups is an array of stat groups (Passing, Rushing, Receiving, Defensive, etc.)
+        live_stat_doc = {
+            "game_id": game_id,
+            "player_id": player_id,
+            "season": season,
+            "player_data": player_stat.get("player", {}),
+            "team_data": player_stat.get("team", {}),
+            "groups": player_stat.get("groups", []),  # Array of stat groups
+            "last_updated": datetime.utcnow(),
+        }
+        
+        # Upsert based on game_id and player_id (one record per player per game)
+        result = collection.update_one(
+            {"game_id": game_id, "player_id": player_id},
+            {"$set": live_stat_doc},
+            upsert=True,
+        )
+        
+        return {
+            "success": True,
+            "matched": result.matched_count,
+            "modified": result.modified_count,
+            "upserted_id": str(result.upserted_id) if result.upserted_id else None,
+        }
+    except Exception as e:
+        print(f"Error upserting live stats: {e}")
+        return {"success": False, "error": str(e)}
+
+async def get_live_stats_from_db(player_ids: List[int], season: int = 2025):
+    """Get live stats for multiple players from the live_stats collection."""
+    db = get_database()
+    if db is None:
+        return {"error": "Database not connected"}
+
+    collection = db["live_stats"]
+    
+    # Query for all player IDs in the list
+    query = {
+        "player_id": {"$in": player_ids},
+        "season": season
+    }
+    
+    docs = await collection.find(query).to_list(length=None)
+    
+    # Convert ObjectId to string for JSON serialization
+    for doc in docs:
+        if "_id" in doc:
+            doc["_id"] = str(doc["_id"])
+    
+    return docs
+
 # --- Games storage and retrieval ---
 
 def save_games_to_db_sync(games_data: List[Dict[str, Any]], season: int = 2025):

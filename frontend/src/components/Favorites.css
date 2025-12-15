@@ -16,27 +16,6 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-height: calc(100vh - 500px);
-  overflow-y: auto;
-  padding-right: 8px;
-}
-
-.favorites-list::-webkit-scrollbar {
-  width: 8px;
-}
-
-.favorites-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-.favorites-list::-webkit-scrollbar-thumb {
-  background: #ffb612;
-  border-radius: 4px;
-}
-
-.favorites-list::-webkit-scrollbar-thumb:hover {
-  background: #e6a510;
 }
 
 .favorite-card {

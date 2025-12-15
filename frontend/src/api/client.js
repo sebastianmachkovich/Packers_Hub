@@ -47,6 +47,24 @@ export const api = {
   },
 
   /**
+   * Get live stats for multiple players
+   * @param {number[]} playerIds - Array of player IDs
+   * @param {number} season - Season year (default: 2025)
+   * @returns {Promise<Object>} Live stats for all requested players
+   */
+  async getLiveStats(playerIds, season = 2025) {
+    const response = await fetch(`${BASE_URL}/packers/live-stats`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ player_ids: playerIds, season }),
+    });
+    if (!response.ok) throw new Error("Failed to fetch live stats");
+    return response.json();
+  },
+
+  /**
    * Get Packers games schedule
    * @param {number} season - Season year (default: 2025)
    * @returns {Promise<Object>} Games data with games array

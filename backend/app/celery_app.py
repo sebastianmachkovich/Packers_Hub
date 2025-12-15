@@ -33,7 +33,7 @@ celery_app.conf.beat_schedule = {
     },
     "update-packers-live-stats": {
         "task": "app.tasks.realtime_tasks.update_packers_live_stats",
-        "schedule": 300.0,  # Check every 5 minutes; will self-reschedule every 30s if game is active
+        "schedule": 30.0,  # Check every 30 seconds for live games
     },
 }
 
