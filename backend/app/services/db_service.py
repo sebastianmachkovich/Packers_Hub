@@ -418,12 +418,3 @@ def get_next_game_sync(season: int = 2025, team_id: int = 15):
     except Exception as e:
         print(f"Error getting next game: {e}")
         return None
-
-# ============================================
-# Favorites Management
-# ============================================
-
-
-
-
-

@@ -9,8 +9,7 @@ PACKERS_TEAM_ID = 15
 def update_packers_live_stats(season: int = 2025):
 	"""
 	Poll live games; if Packers are playing, fetch and upsert player stats in near real-time.
-	Checks game status/times first. If game is active, reschedules itself every 30 seconds.
-	Otherwise, waits for next Beat schedule (every 5 minutes).
+	Checks game status/times first. This task reschedules itself every 30 seconds.
 	"""
 	print(f"[{datetime.now()}] Checking for active Packers game...")
 	
